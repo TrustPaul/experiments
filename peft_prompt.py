@@ -9,14 +9,22 @@ from transformers import default_data_collator, get_linear_schedule_with_warmup
 from tqdm import tqdm
 from datasets import load_dataset
 
+prompt_peft = """
+What is the topic for a given news headline? \n
+Chose from these  predefined topics \n\n
+- World \n
+- Sports \n
+- Bussiness \n
+- Science \n\n
+"""
 device = "cuda"
-model_name_or_path = "facebook/opt-350m"
-tokenizer_name_or_path = "facebook/opt-350m"
+model_name_or_path = "bigscience/bloom-560m"
+tokenizer_name_or_path = "bigscience/bloom-560m"
 peft_config = PromptTuningConfig(
     task_type=TaskType.CAUSAL_LM,
     prompt_tuning_init=PromptTuningInit.TEXT,
     num_virtual_tokens=8,
-    prompt_tuning_init_text="Classify if the tweet is a complaint or not:",
+    prompt_tuning_init_text=prompt_peft,
     tokenizer_name_or_path=model_name_or_path,
 )
 
@@ -28,7 +36,7 @@ text_column = "text"
 label_column = "label"
 max_length = 200
 lr = 3e-2
-num_epochs = 5
+num_epochs = 10
 batch_size = 32
 
 
@@ -58,7 +66,7 @@ dataset = load_dataset(
     split='train'
 )
 
-dataset = dataset.train_test_split(test_size=0.1, seed=None)
+dataset = dataset.train_test_split(test_size=0.0001, seed=None)
 train_data = dataset["train"]
 valid_data = dataset["test"]
 print(f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}")
@@ -91,11 +99,10 @@ df_model = pd.DataFrame()
 df_model['text'] = prompts
 df_model['label'] = labels
 
-df_model = sample_dataset(df_model, samples_per_class=5000)
-df_model  = df_model.sample(frac=1).reset_index(drop=True)
+
 
 dataset = Dataset.from_pandas(df_model)
-dataset = dataset.train_test_split(test_size=0.01, seed=None)
+dataset = dataset.train_test_split(test_size=0.0001, seed=None)
 
 
 
@@ -334,9 +341,9 @@ for text, label in zip(texts, labels):
 df_results = pd.DataFrame()
 df_results['pred'] = pred_labels
 df_results['label'] = true_labels
-df_results.to_csv('/home/ptrust/experiments/data/results_peft_opt.csv')
+df_results.to_csv('/home/ptrust/experiments/data/results_peft_bloom_560m.csv')
 # saving model
-peft_model_id = "paultrust/ag_news_peft"
+peft_model_id = "paultrust/ag_news_peft_bloom_560m"
 tokenizer.push_to_hub(peft_model_id)
 model.push_to_hub(peft_model_id)
 
