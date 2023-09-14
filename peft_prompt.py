@@ -60,7 +60,7 @@ def sample_dataset(df_model, samples_per_class=2):
     return  sampled_df
 
 
-dataset_name = "ag_news"
+dataset_name = "SetFit/bbc-news"
 dataset = load_dataset(
     dataset_name,
     split='train'
@@ -72,24 +72,25 @@ valid_data = dataset["test"]
 print(f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}")
 
 
+import pandas as pd
 text_train = train_data['text']
-label_train = train_data['label']
+label_train = train_data['label_text']
 
 df_train = pd.DataFrame()
-df_train['text'] = text_train 
-df_train['label'] =  label_train
+df_train['text'] = text_train
+df_train['text_label'] =  label_train
 
-df_train['text_label'] = df_train['label'].replace({0: 'World', 1: 'Sports', 2:'Business', 3:'Science'})
 texts = df_train['text'].tolist()
-labels =  df_train['text_label'] .tolist()
+labels =  df_train['text_label'].tolist()
 prompts = []
 for i, j in zip(texts, labels):
-    prompt = f""" What is the topic for a given news headline? \n
+    prompt = f""" What is the topic for a given news article? \n
               Chose from these  predefined topics \n\n
-             - World \n
-             - Sports \n
-             - Bussiness \n
-             - Science \n\n
+             - politics \n
+             - entertainment \n
+             - business \n
+             - tech \n
+             - sport\n\n
 
              Text: {i}\n\n###\n\n """
     prompts.append(prompt)
@@ -262,90 +263,11 @@ for epoch in range(num_epochs):
 
 # In[32]:
 
-
-model.to(device)
-model.eval()
-
-
-# In[36]:
-
-
-dataset_name = "ag_news"
-dataset = load_dataset(
-    dataset_name,
-    split='test'
-)
-
-dataset = dataset.train_test_split(test_size=0.99, seed=None)
-train_data = dataset["train"]
-valid_data = dataset["test"]
-print(f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}")
-
-
-text_train = train_data['text']
-label_train = train_data['label']
-
-df_train = pd.DataFrame()
-df_train['text'] = text_train 
-df_train['label'] =  label_train
-
-df_train['text_label'] = df_train['label'].replace({0: 'World', 1: 'Sports', 2:'Business', 3:'Science'})
-texts = df_train['text'].tolist()
-labels =  df_train['text_label'] .tolist()
-prompts = []
-for i, j in zip(texts, labels):
-    prompt = f""" What is the topic for a given news headline? \n
-              Chose from these  predefined topics \n\n
-             - World \n
-             - Sports \n
-             - Bussiness \n
-             - Science \n\n
-
-             Text: {i}\n\n###\n\n """
-    prompts.append(prompt)
-
-df_model = pd.DataFrame()
-
-df_model['text'] = prompts
-df_model['label'] = labels
-
-dataset = Dataset.from_pandas(df_model)
-
-
-
-
-
-
-
-texts = df_model['text'].tolist()
-labels = df_model['label'].tolist()
-
-
-
-
-pred_labels = []
-true_labels = []
-
-for text, label in zip(texts, labels):
-    inputs = tokenizer(f'{text_column} : {text} Label : ', return_tensors="pt")
-    with torch.no_grad():
-        inputs = {k: v.to(device) for k, v in inputs.items()}
-        outputs = model.generate(
-            input_ids=inputs["input_ids"], attention_mask=inputs["attention_mask"], max_new_tokens=1, eos_token_id=3
-        )
-        pred_label = tokenizer.batch_decode(outputs.detach().cpu().numpy(), skip_special_tokens=True)
-        pred_labels.append(pred_label)
-        true_labels.append(label)
-
-
-df_results = pd.DataFrame()
-df_results['pred'] = pred_labels
-df_results['label'] = true_labels
-df_results.to_csv('/home/ptrust/experiments/data/results_peft_bloom_560m.csv')
 # saving model
-peft_model_id = "paultrust/ag_news_peft_bloom_560m"
+peft_model_id = "paultrust/bbc_peft_bloom_560m"
 tokenizer.push_to_hub(peft_model_id)
 model.push_to_hub(peft_model_id)
+
 
 
 

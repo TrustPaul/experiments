@@ -47,7 +47,7 @@ def sample_dataset(df_model, samples_per_class):
     return  sampled_df
 
 
-dataset_name = "ag_news"
+dataset_name = "SetFit/bbc-news"
 dataset = load_dataset(
     dataset_name,
     split='train'
@@ -59,24 +59,25 @@ valid_data = dataset["test"]
 print(f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}")
 
 
+import pandas as pd
 text_train = train_data['text']
-label_train = train_data['label']
+label_train = train_data['label_text']
 
 df_train = pd.DataFrame()
-df_train['text'] = text_train 
-df_train['label'] =  label_train
+df_train['text'] = text_train
+df_train['text_label'] =  label_train
 
-df_train['text_label'] = df_train['label'].replace({0: 'World', 1: 'Sports', 2:'Business', 3:'Science'})
 texts = df_train['text'].tolist()
-labels =  df_train['text_label'] .tolist()
+labels =  df_train['text_label'].tolist()
 prompts = []
 for i, j in zip(texts, labels):
-    prompt = f""" What is the topic for a given news headline? \n
+    prompt = f""" What is the topic for a given news article? \n
               Chose from these  predefined topics \n\n
-             - World \n
-             - Sports \n
-             - Bussiness \n
-             - Science  \n\n
+             - politics \n
+             - entertainment \n
+             - business \n
+             - tech \n
+             - sport\n\n
 
              Text: {i}\n\n###\n\n """
     prompts.append(prompt)
@@ -262,7 +263,7 @@ for epoch in range(num_epochs):
 
 
 # saving model
-peft_model_id = "paultrust/ag_news_prefix_opt_350m"
+peft_model_id = "paultrust/bbc_prefix_opt_350m"
 tokenizer.push_to_hub(peft_model_id)
 model.push_to_hub(peft_model_id)
 
