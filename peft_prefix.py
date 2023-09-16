@@ -47,7 +47,7 @@ def sample_dataset(df_model, samples_per_class):
     return  sampled_df
 
 
-dataset_name = "SetFit/bbc-news"
+dataset_name = "nanyy1025/covid_fake_news"
 dataset = load_dataset(
     dataset_name,
     split='train'
@@ -60,8 +60,8 @@ print(f"Size of the train set: {len(train_data)}. Size of the validation set: {l
 
 
 import pandas as pd
-text_train = train_data['text']
-label_train = train_data['label_text']
+text_train = train_data['tweet']
+label_train = train_data['label']
 
 df_train = pd.DataFrame()
 df_train['text'] = text_train
@@ -71,13 +71,10 @@ texts = df_train['text'].tolist()
 labels =  df_train['text_label'].tolist()
 prompts = []
 for i, j in zip(texts, labels):
-    prompt = f""" What is the topic for a given news article? \n
-              Chose from these  predefined topics \n\n
-             - politics \n
-             - entertainment \n
-             - business \n
-             - tech \n
-             - sport\n\n
+    prompt = f"""Decide whether the provided  tweet text about covid 19, real or fake\n\n
+             - real \n
+             - fake \n\n
+
 
              Text: {i}\n\n###\n\n """
     prompts.append(prompt)
