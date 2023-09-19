@@ -10,9 +10,10 @@ from tqdm import tqdm
 from datasets import load_dataset
 
 prompt_peft = """
-Decide whether the provided  tweet text about covid 19, real or fake\n\n
-             - real \n
-             - fake \n\n
+Is the provided new article discussing economic policy uncertanity or not\n\n
+Answer yes or no \n
+- yes \n
+- no \n\n
 """
 device = "cuda"
 model_name_or_path = "bigscience/bloom-560m"
@@ -57,33 +58,30 @@ def sample_dataset(df_model, samples_per_class=2):
     return  sampled_df
 
 
-dataset_name = "nanyy1025/covid_fake_news"
-dataset = load_dataset(
-    dataset_name,
-    split='train'
-)
 
-dataset = dataset.train_test_split(test_size=0.0001, seed=None)
+dataset = load_dataset("paultrust/epu_llm")
 train_data = dataset["train"]
 valid_data = dataset["test"]
 print(f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}")
 
 
 import pandas as pd
-text_train = train_data['tweet']
-label_train = train_data['label']
+text_train = train_data['Text']
+label_train = train_data['EPU']
 
 df_train = pd.DataFrame()
 df_train['text'] = text_train
-df_train['text_label'] =  label_train
+df_train['label'] =  label_train
+df_train['text_label'] = df_train['label'].replace({0: 'no', 1: 'yes'})
 
 texts = df_train['text'].tolist()
 labels =  df_train['text_label'].tolist()
 prompts = []
 for i, j in zip(texts, labels):
-    prompt = f"""Decide whether the provided  tweet text about covid 19, real or fake\n\n
-             - real \n
-             - fake \n\n
+    prompt = f"""Is the provided new article discussing economic policy uncertanity or not\n\n
+              Answer yes or no \n
+             - yes \n
+             - no \n\n
 
 
              Text: {i}\n\n###\n\n """
@@ -258,7 +256,7 @@ for epoch in range(num_epochs):
 # In[32]:
 
 # saving model
-peft_model_id = "paultrust/covid_peft_bloom_560m"
+peft_model_id = "paultrust/epu_peft_bloom_560m"
 tokenizer.push_to_hub(peft_model_id)
 model.push_to_hub(peft_model_id)
 
