@@ -60,6 +60,8 @@ def sample_dataset(df_model, samples_per_class=2):
     return  sampled_df
 
 
+dataset = load_dataset("zeroshot/twitter-financial-news-sentiment")
+train_data = dataset["train"]
 
 import pandas as pd
 text_train = train_data['text']

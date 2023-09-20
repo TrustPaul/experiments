@@ -48,6 +48,9 @@ def sample_dataset(df_model, samples_per_class):
 
 
 import pandas as pd
+dataset = load_dataset("zeroshot/twitter-financial-news-sentiment")
+train_data = dataset["train"]
+
 text_train = train_data['text']
 label_train = train_data['label']
 
