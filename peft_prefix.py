@@ -47,29 +47,25 @@ def sample_dataset(df_model, samples_per_class):
     return  sampled_df
 
 
-dataset = load_dataset("paultrust/epu_llm")
-train_data = dataset["train"]
-valid_data = dataset["test"]
-print(f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}")
-
-
 import pandas as pd
-text_train = train_data['Text']
-label_train = train_data['EPU']
+text_train = train_data['text']
+label_train = train_data['label']
 
 df_train = pd.DataFrame()
 df_train['text'] = text_train
 df_train['label'] =  label_train
-df_train['text_label'] = df_train['label'].replace({0: 'no', 1: 'yes'})
+df_train['text_label'] = df_train['label'].replace({0: 'Bearish', 1: 'Bullish',3: 'Neutral'})
 
 texts = df_train['text'].tolist()
 labels =  df_train['text_label'].tolist()
 prompts = []
 for i, j in zip(texts, labels):
-    prompt = f"""Is the provided new article discussing economic policy uncertanity or not\n\n
-              Answer yes or no \n
-             - yes \n
-             - no \n\n
+    prompt = f"""You are provided a tweet text describing a financial sentiment sentiment\n
+              What is the sentiment of the tweet\n
+              The sentiment has to be one of the following;\n
+             - Bearish \n
+             - Bullish \n
+             - Neutral \n
 
 
              Text: {i}\n\n###\n\n """
@@ -256,7 +252,7 @@ for epoch in range(num_epochs):
 
 
 # saving model
-peft_model_id = "paultrust/epu_prefix_opt_350m"
+peft_model_id = "paultrust/twitter_finance_prefix_opt_350m"
 tokenizer.push_to_hub(peft_model_id)
 model.push_to_hub(peft_model_id)
 

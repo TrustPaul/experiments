@@ -84,10 +84,11 @@ def prepare_prompts(example):
     example[
         "prompts"
     ] = f"""
-     Is the provided new article discussing economic policy uncertanity or not\n\n
+     Is the provided new article (text) discussing economic policy uncertanity or not\n\n
               Answer yes or no \n
              - yes \n
-             - no \n\n: {texts}\n\n###\n\nCategory: {labels}"""
+             - no \n\n: 
+             Text: {texts}\n\n###\n\nAnswer: {labels}"""
     return example
 
 def sample_dataset(df_model, samples_per_class=2):
