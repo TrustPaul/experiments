@@ -84,12 +84,10 @@ def prepare_prompts(example):
     example[
         "prompts"
     ] = f"""
-    What is the topic for a given news headline? \n
-              Chose from these  predefined topics \n\n
-             - World \n
-             - Sports \n
-             - Bussiness \n
-             - Science \n\n: {texts}\n\n###\n\nCategory: {labels}"""
+     Is the provided new article discussing economic policy uncertanity or not\n\n
+              Answer yes or no \n
+             - yes \n
+             - no \n\n: {texts}\n\n###\n\nCategory: {labels}"""
     return example
 
 def sample_dataset(df_model, samples_per_class=2):
@@ -106,30 +104,28 @@ def sample_dataset(df_model, samples_per_class=2):
     return  sampled_df
 
 def create_datasets(tokenizer, args):     
-    dataset_name = "ag_news"
-    dataset = load_dataset(
-        dataset_name,
-        split='train'
-    )
-
-    dataset = dataset.train_test_split(test_size=0.001, seed=None)
+    dataset = load_dataset("paultrust/epu_llm")
     train_data = dataset["train"]
     valid_data = dataset["test"]
     print(f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}")
 
 
-    text_train = train_data['text']
-    label_train = train_data['label']
+    import pandas as pd
+    text_train = train_data['Text']
+    label_train = train_data['EPU']
 
     df_train = pd.DataFrame()
-    df_train['text'] = text_train 
+    df_train['text'] = text_train
     df_train['label'] =  label_train
-    df_train['text_label'] = df_train['label'].replace({0: 'World', 1: 'Sports', 2:'Business', 3:'Science'})
+    df_train['text_label'] = df_train['label'].replace({0: 'no', 1: 'yes'})
+
+    texts = df_train['text'].tolist()
+    labels =  df_train['text_label'].tolist()
     #df_train = sample_dataset( df_train, samples_per_class=100)
     #df_train  =  df_train.sample(frac=1).reset_index(drop=True)
 
     dataset_blogs = Dataset.from_pandas(df_train)
-    dataset_split = dataset_blogs.train_test_split(test_size=0.4, seed=args.seed)
+    dataset_split = dataset_blogs.train_test_split(test_size=0.00001, seed=args.seed)
 
     data =  dataset_split.map(
       prepare_prompts
@@ -205,7 +201,7 @@ def run_training(args, train_data, tokenizer):
     print("Training...")
     trainer.train()
     print("Saving last checkpoint of the model")
-    huggingface_repo = "paultrust/ag_news_falcon_7b_instruct_4_bit"
+    huggingface_repo = "paultrust/epu_falcon_7b_instruct_4_bit"
     model.push_to_hub(huggingface_repo)
     
    # model.save_pretrained(os.path.join(args.output_dir, "final_checkpoint/"))
