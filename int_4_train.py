@@ -84,11 +84,8 @@ def prepare_prompts(example):
     example[
         "prompts"
     ] = f"""
-     Is the provided new article (text) discussing economic policy uncertanity or not\n\n
-              Answer yes or no \n
-             - yes \n
-             - no \n\n: 
-             Text: {texts}\n\n###\n\nAnswer: {labels}"""
+    Decide whether a Tweet's sentiment is positive, negative.
+    Text: {texts}\n\n###\n\nAnswer: {labels}"""
     return example
 
 def sample_dataset(df_model, samples_per_class=2):
@@ -105,20 +102,19 @@ def sample_dataset(df_model, samples_per_class=2):
     return  sampled_df
 
 def create_datasets(tokenizer, args):     
-    dataset = load_dataset("paultrust/epu_llm")
+    dataset = load_dataset("imdb")
     train_data = dataset["train"]
-    valid_data = dataset["test"]
-    print(f"Size of the train set: {len(train_data)}. Size of the validation set: {len(valid_data)}")
+
 
 
     import pandas as pd
-    text_train = train_data['Text']
-    label_train = train_data['EPU']
+    text_train = train_data['text']
+    label_train = train_data['label']
 
     df_train = pd.DataFrame()
     df_train['text'] = text_train
     df_train['label'] =  label_train
-    df_train['text_label'] = df_train['label'].replace({0: 'no', 1: 'yes'})
+    df_train['text_label'] = df_train['label'].replace({0: 'negative', 1: 'positive'})
 
     texts = df_train['text'].tolist()
     labels =  df_train['text_label'].tolist()
