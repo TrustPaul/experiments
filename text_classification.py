@@ -36,10 +36,20 @@ accuracy = evaluate.load("accuracy")
 import numpy as np
 
 
-def compute_metrics(eval_pred):
-    predictions, labels = eval_pred
-    predictions = np.argmax(predictions, axis=1)
-    return accuracy.compute(predictions=predictions, references=labels)
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+import numpy as np
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+def compute_metrics(p):
+    pred, labels = p
+    pred = np.argmax(pred, axis=1)
+    accuracy = accuracy_score(y_true=labels, y_pred=pred,average='macro')
+    recall = recall_score(y_true=labels, y_pred=pred,average='macro')
+    precision = precision_score(y_true=labels, y_pred=pred,average='macro')
+    f1 = f1_score(y_true=labels, y_pred=pred)
+
+    return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1}
 
 id2label = {0: "NEGATIVE", 1: "POSITIVE"}
 label2id = {"NEGATIVE": 0, "POSITIVE": 1}
