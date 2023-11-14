@@ -1,23 +1,25 @@
 
-
 from datasets import load_dataset
 import pandas as pd
-imdb = load_dataset("imdb")
+imdb = dataset
+from transformers import AutoTokenizer
+from transformers import DataCollatorWithPadding
+import evaluate
+import numpy as np
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import f1_score
+import numpy as np
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
 
+#Load Dataset
+imdb = load_dataset("imdb")
 texts = imdb['test']['text']
 labels = imdb['test']['label']
 
-df = pd.DataFrame()
-df['text'] = texts
-df['label'] = labels
-df.to_csv('/home/ptrust/experiments/data/test.csv')
-
-data_files = {"train": "/home/ptrust/experiments/data/imdb_facility_2500_cluster_10.csv", "test": "/home/ptrust/experiments/data/test.csv"}
-dataset = load_dataset("csv", data_files=data_files)
-
-imdb = dataset
-from transformers import AutoTokenizer
-model_path = "distilbert-base-uncased"
+##Change the model to model of interest
+model_path = "idistilbert-base-uncased"
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 
 def preprocess_function(examples):
@@ -25,41 +27,36 @@ def preprocess_function(examples):
 
 tokenized_imdb = imdb.map(preprocess_function, batched=True)
 
-from transformers import DataCollatorWithPadding
 
 data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
-import evaluate
+
 
 accuracy = evaluate.load("accuracy")
 
-import numpy as np
 
 
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import f1_score
-import numpy as np
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
 def compute_metrics(p):
     pred, labels = p
     pred = np.argmax(pred, axis=1)
-    accuracy = accuracy_score(y_true=labels, y_pred=pred,average='macro')
-    recall = recall_score(y_true=labels, y_pred=pred,average='macro')
-    precision = precision_score(y_true=labels, y_pred=pred,average='macro')
+    accuracy = accuracy_score(y_true=labels, y_pred=pred)
+    recall = recall_score(y_true=labels, y_pred=pred)
+    precision = precision_score(y_true=labels, y_pred=pred)
     f1 = f1_score(y_true=labels, y_pred=pred)
 
     return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1}
 
+##Replace these with the labels for the dataset of interest
 id2label = {0: "NEGATIVE", 1: "POSITIVE"}
 label2id = {"NEGATIVE": 0, "POSITIVE": 1}
 
-from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
+
 
 model = AutoModelForSequenceClassification.from_pretrained(
     model_path, num_labels=2, id2label=id2label, label2id=label2id
 )
 
+##The hyper parameters can be changed according
 training_args = TrainingArguments(
     output_dir="my_awesome_model",
     learning_rate=2e-5,
@@ -85,3 +82,8 @@ trainer = Trainer(
 
 trainer.train()
 
+##Save the model to huggingface
+##Go to huggingface and create a model
+#print("Saving last checkpoint of the model")
+#huggingface_repo = "paultrust/zeply_irish_gov_pretrain"
+#model.push_to_hub(huggingface_repo)
