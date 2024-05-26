@@ -22,7 +22,7 @@ df_train = pd.DataFrame()
 df_train['text'] = texts
 df_train['label'] = labels
 
-#df_train = df_train.sample(n=100)
+df_train = df_train.sample(n=100)
 
 train, test = train_test_split(df_train,test_size=0.001)
 
@@ -54,19 +54,24 @@ accelerator = Accelerator(fsdp_plugin=fsdp_plugin)
 
 
 def formatting_func(example):
-    text = f"""
-    <s>[INST] <<SYS>>
-    You are a helpful langauge model designed to answer question faithfully
-    <</SYS>>
+    
+    text_ = f"""
     Summarize the text provided in one short sentence
     Do not explain or give details, just give the summary
-    Text: {example['input']} [/INST]
-    Summary: {example['output']}
-        """
+    Text: {example['input']} \n\n
+    Summary {example['output']} """
 
-    return  text
+    prompt = f"""<|im_start|>system
+          You are a helpful langauge model designed to answer question faithfully<|im_end|>
+        <|im_start|>user
+        {text_}<|im_end|>
+        <|im_start|>assistant"""
+        
+    
 
-base_model_id = "HuggingFaceH4/zephyr-7b-alpha"
+    return  prompt
+
+base_model_id = "HuggingFaceH4/zephyr-7b-beta"
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_use_double_quant=True,
@@ -146,15 +151,14 @@ if torch.cuda.device_count() > 1: # If more than 1 GPU
 output_dir = f"ura_finetuned_{base_model_id}"
 
 tokenizer.pad_token = tokenizer.eos_token
-huggingface_repo = "paultrust/zeply_irish_gov_pretrain"
 trainer = transformers.Trainer(
     model=model,
     train_dataset=tokenized_train_dataset,
     eval_dataset=tokenized_val_dataset,
     args=transformers.TrainingArguments(
         output_dir=output_dir,
-        per_device_train_batch_size=48,
-        gradient_accumulation_steps=48,
+        per_device_train_batch_size=16,
+        gradient_accumulation_steps=16,
         num_train_epochs=5,
         learning_rate=2.5e-5,
         bf16=True,
