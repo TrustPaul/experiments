@@ -55,23 +55,27 @@ accelerator = Accelerator(fsdp_plugin=fsdp_plugin)
 
 def formatting_func(example):
     
-    text_ = f"""
-    Summarize the text provided in one short sentence
-    Do not explain or give details, just give the summary
-    Text: {example['input']} \n\n
-    Summary {example['output']} """
+    
+    system_prompt  = f"You are language model trained by openai that answers user questions"
+    user_msg_1 = f"""
+     Summarize the text provided in one short sentence
+     Do not explain or give details, just give the summary
+     Text: {example['input']}
+    """
+    prompt = f"""
+    <|begin_of_text|><|start_header_id|>system<|end_header_id|>
 
-    prompt = f"""<|im_start|>system
-          You are a helpful langauge model designed to answer question faithfully<|im_end|>
-        <|im_start|>user
-        {text_}<|im_end|>
-        <|im_start|>assistant"""
+    { system_prompt }<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+    { user_msg_1 }<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+    Summary:{example['output']}  """
         
     
 
     return  prompt
 
-base_model_id = "HuggingFaceH4/zephyr-7b-beta"
+base_model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_use_double_quant=True,
@@ -172,5 +176,5 @@ model.config.use_cache = False  # silence the warnings. Please re-enable for inf
 trainer.train()
 
 print("Saving last checkpoint of the model")
-huggingface_repo = "paultrust/ura_zephyr_summarize"
+huggingface_repo = "paultrust/ura_llama3_summarize"
 model.push_to_hub(huggingface_repo)
