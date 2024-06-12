@@ -40,7 +40,7 @@ pipe = pipeline(
 )
 
 
-data = pd.read_csv("/notebooks/gpt/ura/data_irish.csv")
+data = pd.read_csv("/home/ptrust/experiments/llm_data/irish/data_irish.csv")
 
 data = data.sample(n=10)
 texts = data['texts']
@@ -65,6 +65,7 @@ for text, qn, ans, url in zip(texts, questions, answers, urls ):
         system_prompt  = f"You are language model trained by openai that answers user questions"
         user_msg_1 = f"""
             Given the text, answer the following question from the text provided. The answer should only be from the answer provided otherwise say no answer in the text
+            Do not start your answer with according to the text, just generate the answer
         text: {text}
         Question: {qn} """
 
@@ -112,4 +113,4 @@ df_synethentic['chatgpt_answer'] =  answers_used
 df_synethentic['llama3b'] = answers_predicted
 df_synethentic['url'] =  urls_used
 
-df_synethentic.to_csv('irish_train_llama3.csv')
+df_synethentic.to_csv('/home/ptrust/experiments/llm_data/irish/irish_train_llama3.csv')
