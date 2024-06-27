@@ -66,10 +66,10 @@ def evaluate_model(questions, answers, generated_answers, model_type, pipe):
                 """
             elif model_type in ["zephyr-7b", "nous-hermes-8x7B"]:
                 prompt = f"""<|im_start|>system
-                             {system_prompt}<|im_end|>
-                            <|im_start|>user
-                            {user_msg_1} <|im_end|>
-                            <|im_start|>assistant"""
+                         {system_prompt}<|im_end|>
+                        <|im_start|>user
+                        {user_msg_1} <|im_end|>
+                        <|im_start|>assistant"""
 
             sequences = pipe(
                 prompt,
@@ -97,15 +97,12 @@ def process_dataset(file_path, question_col, answer_col, gen_cols):
     answers = df[answer_col].tolist()
     retrieved_docs = df['contexts'].tolist()
 
-    # Load models
-    pipes = {model_type: load_model(model_id) for model_type, model_id in model_configs.items()}
-
     # Evaluate each model with each set of generated answers
     all_scores = {model_type: {} for model_type in model_configs.keys()}
-    for gen_col in gen_cols:
-        generated_answers = df[gen_col].tolist()
-        for model_type in model_configs.keys():
-            pipe = pipes[model_type]
+    for model_type, model_id in model_configs.items():
+        pipe = load_model(model_id)
+        for gen_col in gen_cols:
+            generated_answers = df[gen_col].tolist()
             all_scores[model_type][gen_col] = evaluate_model(questions, answers, generated_answers, model_type, pipe)
 
     # Add scores to the dataframe
@@ -114,8 +111,8 @@ def process_dataset(file_path, question_col, answer_col, gen_cols):
             df[f'{model_type}_score_{gen_col}'] = all_scores[model_type][gen_col]
 
     # Save the evaluation results to a new CSV file
-    output_file = file_path.replace('.csv', '_evaluation_results.csv')
-    df.to_csv(f"/home/ptrust/experiments/llm_data/irish/{output_file}", index=False)
+    output_file = file_path.replace('.csv', '_scores.csv')
+    df.to_csv(output_file, index=False)
 
 # Define model configurations
 model_configs = {
@@ -127,6 +124,11 @@ model_configs = {
     "zephyr-7b": "HuggingFaceH4/zephyr-7b-beta",
     "nous-hermes-8x7B": "NousResearch/Nous-Hermes-2-Mixtral-8x7B-DPO"
 }
+
+# # Process each dataset
+# process_dataset('rag_evaluation_irish_contexts.csv', 'question', 'true_answer', ['llama_7b_answer_x', 'llama_13b_answer', 'msitra_7b_instruct_answer'])
+# process_dataset('rag_evaluation_hse_contexts.csv', 'question', 'true_answer', ['llama_7b_answer', 'llama_13b_answer', 'mistra_7b_answer'])
+# process_dataset('statistical_graphs_with_context.csv', 'question', 'human_answer', ['gemini', 'llava_7b', 'llava_13b', 'gpt4answer'])
 
 # Process each dataset
 process_dataset('/home/ptrust/experiments/llm_data/irish/rag_evaluation_irish_contexts.csv', 'question', 'true_answer', ['llama_7b_answer_x', 'llama_13b_answer', 'msitra_7b_instruct_answer'])
