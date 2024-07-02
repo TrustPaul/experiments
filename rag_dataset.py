@@ -1,8 +1,5 @@
 from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 from ragatouille import RAGPretrainedModel
 from langchain.retrievers import SVMRetriever
 from langchain.retrievers import TFIDFRetriever
