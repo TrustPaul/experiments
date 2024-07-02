@@ -6,44 +6,31 @@ sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 from ragatouille import RAGPretrainedModel
 from langchain.retrievers import SVMRetriever
 from langchain.retrievers import TFIDFRetriever
-from langchain.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import pandas as pd
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 
-# Load Excel and CSV data
-df = pd.read_excel('/home/ptrust/experiments/llm_data/irish/rag_experiments.xlsx')
+# Load CSV data
 df_full = pd.read_csv('/home/ptrust/experiments/llm_data/irish/data_irish.csv')
 
-df = df.sample(n=5)
+# df_full = pd.read_csv('/notebooks/gpt/ura/data_irish.csv')
+
 df_full = df_full.sample(n=5)
 
 # Extract lists from DataFrame
-questions = df['questions'].tolist()
-answers = df['answers'].tolist()
-urls = df['urls'].tolist()
+questions = df_full['questions'].tolist()  # Ensure these columns exist in df_full
+answers = df_full['answers'].tolist()      # Ensure these columns exist in df_full
 texts_full = df_full['texts'].tolist()
-texts_subset = df['texts'].tolist()
 
 # Remove duplicates from the text lists
 texts_full = list(set(texts_full))
-texts_subset = list(set(texts_subset))
 
 # Combine text data for splitting
 all_page_text_full = " ".join(texts_full)
-all_page_text_subset = " ".join(texts_subset)
 
 # Split text into chunks
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
 splits_full = text_splitter.split_text(all_page_text_full)
-splits_subset = text_splitter.split_text(all_page_text_subset)
-
-# # Define the models to experiment with
-# embedding_models = [
-#     "sentence-transformers/all-mpnet-base-v2",
-#     "sentence-transformers/all-distilroberta-v1",
-#     "BAAI/bge-base-en-v1.5",
-# ]
 
 embedding_models = [
     "sentence-transformers/all-mpnet-base-v2",
@@ -60,7 +47,7 @@ def format_docs(docs):
 RERANKER = RAGPretrainedModel.from_pretrained("colbert-ir/colbertv2.0")
 
 # Function to run experiments on a set of texts
-def run_experiments(texts, splits, prefix):
+def run_experiments(texts, splits):
     experiment_results = []
 
     for model_name in embedding_models:
@@ -166,20 +153,20 @@ def run_experiments(texts, splits, prefix):
 
     return experiment_results
 
-# Run experiments on both full and subset texts
-results_subset = run_experiments(texts_subset, splits_subset, 'subset')
+# Run experiments on full texts
+results_full = run_experiments(texts_full, splits_full)
 
 # Create a DataFrame from the experiment results
-df_results = pd.DataFrame(results_subset)
+df_results = pd.DataFrame(results_full)
 
 # Save the results DataFrame to a new Excel file
-df_results.to_excel('rag_experiments_results.xlsx', index=False)
+df_results.to_excel('rag_experiments_results_full.xlsx', index=False)
 
 # Define the system prompt
 system_prompt = "You are a language model trained by OpenAI that answers user questions"
 
 # Load the generation model
-generation_model_id = "mistralai/Mistral-7B-Instruct-v0.3"
+generation_model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
 generation_tokenizer = AutoTokenizer.from_pretrained(generation_model_id)
 generation_model = AutoModelForCausalLM.from_pretrained(
     generation_model_id,
@@ -221,11 +208,12 @@ for question, answer, context in zip(questions, answers, contexts):
         Question: {question}
 
         Answer:::"""
-        prompt = f"""<s>[INST] <<SYS>>
-        {system_prompt}
-        <</SYS>>
-        {user_msg_1} [/INST]
-        """
+        prompt = f"""
+            <|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+            { system_prompt }<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+            {  user_msg_1 }<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
         sequences = generation_pipe(
             prompt,
             max_new_tokens=40,
@@ -243,7 +231,6 @@ for question, answer, context in zip(questions, answers, contexts):
 
 df_results['generated_answer'] = generated_answers
 
-# df_results = df_results.sample(n=10)
 # Load the evaluation model
 evaluation_model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
 evaluation_tokenizer = AutoTokenizer.from_pretrained(evaluation_model_id)
@@ -297,11 +284,11 @@ for question, answer, gen_answer in zip(questions, answers, generated_answers):
             ###score:"""
 
         prompt = f"""
-        <|begin_of_text|><|start_header_id|>system<|end_header_id|>
+            <|begin_of_text|><|start_header_id|>system<|end_header_id|>
 
-        { system_prompt }<|eot_id|><|start_header_id|>user<|end_header_id|>
+            { system_prompt }<|eot_id|><|start_header_id|>user<|end_header_id|>
 
-        { user_msg_2 }<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+            { user_msg_2 }<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
         sequences = evaluation_pipe(
             prompt,
             max_new_tokens=25,
@@ -319,5 +306,8 @@ for question, answer, gen_answer in zip(questions, answers, generated_answers):
 
 df_results['evaluation_score'] = evaluation_scores
 
-# Save the final DataFrame to a new Excel file
+# # Save the final DataFrame to a new Excel file
 df_results.to_excel('/home/ptrust/experiments/llm_data/irish/rag_experiments_final_results.xlsx', index=False)
+
+# # Save the results DataFrame to a new Excel file
+# df_results.to_excel('rag_experiments_results_full.xlsx', index=False)
